@@ -60,13 +60,16 @@ fn parse_input(input: &str) -> Vec<Instruction> {
 }
 
 struct Grid {
-    lights: Box<[[bool; 1_000]; 1_000]>,
+    lights: Box<[[i32; 1_000]; 1_000]>,
 }
 
 impl Grid {
     fn new() -> Self {
         Self {
-            lights: Box::new([[false; 1_000]; 1_000]),
+            lights: vec![[0; 1_000]; 1_000]
+                .into_boxed_slice()
+                .try_into()
+                .unwrap(),
         }
     }
 
@@ -76,19 +79,15 @@ impl Grid {
                 .y
                 .clone()
                 .for_each(|y| match instruction.action {
-                    Action::On => self.lights[x][y] = true,
-                    Action::Off => self.lights[x][y] = false,
-                    Action::Toggle => self.lights[x][y] = !self.lights[x][y],
+                    Action::On => self.lights[x][y] += 1,
+                    Action::Off => self.lights[x][y] = 0.max(self.lights[x][y] - 1),
+                    Action::Toggle => self.lights[x][y] += 2,
                 })
         });
     }
 
-    fn lights_on(&self) -> usize {
-        self.lights
-            .iter()
-            .flat_map(|r| r.iter())
-            .filter(|&x| *x)
-            .count()
+    fn total_brightness(&self) -> i32 {
+        self.lights.iter().flat_map(|r| r.iter()).sum::<i32>()
     }
 }
 
@@ -97,5 +96,5 @@ fn main() {
     let instructions = parse_input(input);
     let mut grid = Grid::new();
     instructions.iter().for_each(|i| grid.apply_instruction(i));
-    println!("{}", grid.lights_on());
+    println!("{}", grid.total_brightness());
 }
