@@ -4,6 +4,10 @@ fn starts_with_five_zeros(hash: [u8; 16]) -> bool {
     hash[0] == 0 && hash[1] == 0 && hash[2] <= 0x0f
 }
 
+fn starts_with_six_zeros(hash: [u8; 16]) -> bool {
+    hash[0] == 0 && hash[1] == 0 && hash[2] == 0
+}
+
 fn compute_hash(key: &str, number: i32) -> [u8; 16] {
     let str = format!("{}{}", key, number);
     md5::compute(str).0
@@ -12,7 +16,7 @@ fn compute_hash(key: &str, number: i32) -> [u8; 16] {
 fn find_lowest_number(key: &str) -> i32 {
     (1..)
         .map(|x| (x, compute_hash(key, x)))
-        .find(|(_, hash)| starts_with_five_zeros(*hash))
+        .find(|(_, hash)| starts_with_six_zeros(*hash))
         .unwrap()
         .0
 }
