@@ -123,7 +123,19 @@ fn run_instructions_for(wire: Wire, instructions: impl IntoIterator<Item = Instr
 
 fn main() {
     let input = include_str!("../input.txt");
-    let instructions = input.lines().map(Instruction::try_from).map(Result::unwrap);
+    let mut instructions = input
+        .lines()
+        .map(Instruction::try_from)
+        .map(Result::unwrap)
+        .collect::<Vec<_>>();
+    let signal_in_a = run_instructions_for(Wire(String::from("a")), instructions.clone());
+
+    instructions
+        .iter_mut()
+        .find(|i| i.wire == Wire(String::from("b")))
+        .unwrap()
+        .source = Source::Signal(signal_in_a);
+
     let result = run_instructions_for(Wire(String::from("a")), instructions);
     println!("{}", result);
 }
