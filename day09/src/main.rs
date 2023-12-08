@@ -134,7 +134,49 @@ impl Distances {
             }
         }
 
-        dbg!(steps);
+        // dbg!(steps);
+
+        (best_route, best_route_length)
+    }
+
+    pub fn longest_route(self) -> (Route, usize) {
+        let mut best_route: Route = self.locations.clone().into_iter().collect();
+        let mut best_route_length = self.route_length(&best_route);
+        let mut stack: Vec<(usize, Route, HashSet<String>)> =
+            vec![(0, vec![], self.locations.iter().cloned().collect())];
+
+        let mut steps = 0;
+
+        while let Some((current_route_length, current_route, remaining)) = stack.pop() {
+            steps += 1;
+
+            if remaining.is_empty() {
+                if current_route_length > best_route_length {
+                    best_route = current_route;
+                    best_route_length = current_route_length;
+                }
+            } else {
+                for remaining_location in remaining.iter() {
+                    let mut new_route = current_route.clone();
+                    let last_location = new_route.last();
+
+                    let mut new_remaining = remaining.clone();
+                    new_remaining.remove(remaining_location);
+
+                    let new_route_length = current_route_length
+                        + if let Some(last_location) = last_location {
+                            self.get((last_location, remaining_location)).unwrap()
+                        } else {
+                            0
+                        };
+
+                    new_route.push(remaining_location.clone());
+                    stack.push((new_route_length, new_route, new_remaining));
+                }
+            }
+        }
+
+        // dbg!(steps);
 
         (best_route, best_route_length)
     }
@@ -144,9 +186,8 @@ fn main() {
     let input = include_str!("../input.txt");
     let distances_vec = parse_input(input);
     let distances = Distances::new(distances_vec);
-    let shortest_route = distances.shortest_route();
-
-    dbg!(shortest_route);
+    let longest_route = distances.longest_route();
+    println!("{}", longest_route.1);
 }
 
 #[cfg(test)]
