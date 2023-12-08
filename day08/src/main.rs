@@ -69,17 +69,32 @@ fn count_chars_literals_values(input: &str) -> (usize, usize) {
     (literals, values)
 }
 
+fn length_encoded_string(input: &str) -> usize {
+    dbg!(input);
+    input
+        .chars()
+        .map(|c| match c {
+            '\"' => 2,
+            '\\' => 2,
+            _ => 1,
+        })
+        .sum::<usize>()
+        + 2
+}
+
 fn main() {
     let input = include_str!("../input.txt");
     let lines = input.lines();
-    let (literals, values) = lines
+
+    let encoded: usize = lines.clone().map(length_encoded_string).sum();
+    let (literals, _values) = lines
         .map(|line| {
             let (a, b) = count_chars_literals_values(line);
             (a, b)
         })
         .reduce(|(a, b), (c, d)| (a + c, b + d))
         .unwrap();
-    println!("{}", literals - values);
+    println!("{}", encoded - literals);
 }
 
 #[cfg(test)]
@@ -97,7 +112,7 @@ mod test {
 
     #[test]
     fn test_count_chars_literals_values() {
-        let sample_input = test::sample_input();
+        let sample_input = sample_input();
         let expected = [(2usize, 0usize), (5, 3), (10, 7), (6, 1)];
         let actual: Vec<_> = sample_input
             .iter()
@@ -109,5 +124,23 @@ mod test {
             .zip(actual)
             .zip(sample_input)
             .for_each(|((e, a), i)| assert_eq!(*e, a, "{}", i));
+    }
+
+    #[test]
+    fn test_length_encoded_string() {
+        let sample_input = sample_input();
+        let expected_strings = [
+            "\"\\\"\\\"\"",
+            "\"\\\"abc\\\"\"",
+            "\"\\\"aaa\\\\\\\"aaa\\\"\"",
+            "\"\\\"\\\\x27\\\"\"",
+        ];
+        let expected_lengths = expected_strings.map(str::len);
+        let lengths = sample_input.iter().map(|s| length_encoded_string(s));
+        expected_lengths
+            .iter()
+            .zip(lengths)
+            .zip(sample_input.iter().zip(expected_strings))
+            .for_each(|((e, a), s)| assert_eq!(*e, a, "{:?}", s));
     }
 }
