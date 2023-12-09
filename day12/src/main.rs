@@ -1,49 +1,48 @@
 use serde_json::Value;
 
-fn traverse_values(input: &Value) -> Vec<Value> {
-    match input {
-        Value::Array(a) => a.iter().flat_map(traverse_values).collect(),
-        Value::Object(map) => map.values().flat_map(traverse_values).collect(),
-        v => vec![v.clone()],
+fn iterate_values<'a>(root: &'a Value) -> Box<dyn Iterator<Item = &Value> + 'a> {
+    match root {
+        Value::Array(a) => Box::new(a.iter().flat_map(iterate_values)),
+        Value::Object(map) => Box::new(map.values().flat_map(iterate_values)),
+        v => Box::new(std::iter::once(v)),
     }
 }
 
-fn traverse_values_skip_reds(input: &Value) -> Vec<Value> {
-    match input {
-        Value::Array(a) => a.iter().flat_map(traverse_values_skip_reds).collect(),
+fn iterate_values_skip_reds<'a>(root: &'a Value) -> Box<dyn Iterator<Item = &Value> + 'a> {
+    match root {
+        Value::Array(a) => Box::new(a.iter().flat_map(iterate_values_skip_reds)),
         Value::Object(map) => {
             if !map.values().any(|v| v == "red") {
-                map.values().flat_map(traverse_values_skip_reds).collect()
+                Box::new(map.values().flat_map(iterate_values_skip_reds))
             } else {
-                vec![]
+                Box::new(std::iter::empty())
             }
         }
-        v => vec![v.clone()],
+        v => Box::new(std::iter::once(v)),
     }
 }
 
-fn extract_numbers(values: &[Value]) -> Vec<i64> {
+fn extract_numbers<'a>(
+    values: impl IntoIterator<Item = &'a Value> + 'a,
+) -> impl Iterator<Item = i64> + 'a {
     values
-        .iter()
+        .into_iter()
         .filter_map(|v| match v {
             Value::Number(n) => Some(n.as_i64()),
             _ => None,
         })
         .flatten()
-        .collect()
 }
 
 fn main() {
     let input = include_str!("../input.txt");
     let data: Value = serde_json::from_str(input).unwrap();
 
-    let all_values = traverse_values(&data);
-    let numbers = extract_numbers(&all_values);
-    println!("{}", numbers.iter().sum::<i64>());
+    let all_values = iterate_values(&data);
+    let numbers = extract_numbers(all_values);
+    println!("{}", numbers.sum::<i64>());
 
-    let values_skip_reds = traverse_values_skip_reds(&data);
-    let numbers_skip_reds = extract_numbers(&values_skip_reds);
-    println!("{}", numbers_skip_reds.iter().sum::<i64>());
-
-    dbg!(numbers.len(), numbers_skip_reds.len());
+    let values_skip_reds = iterate_values_skip_reds(&data);
+    let numbers_skip_reds = extract_numbers(values_skip_reds);
+    println!("{}", numbers_skip_reds.sum::<i64>());
 }
